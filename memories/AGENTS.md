@@ -60,11 +60,10 @@ Confidence: [0-100 integer]
 - Flag unresolved ambiguities in `Notes` rather than guessing.
 - Keep confidence scores realistic (85-100 for clear documentation, 60-84 for minor gaps, <60 requires major clarification).
 
-## Learning & Memory Protocol
-1. **Immediate Updates**: Update persistent memory via `edit_file` immediately upon discovering new guidelines, human corrections, or facility preferences, BEFORE completing the task.
-2. **Pre-Coding Analysis**: Every workflow must begin by analyzing `/memories/AGENTS.md` and calling `get_lessons_tool` to ensure historical patterns are applied.
-3. **Principle-Based Learning**: Store the underlying coding logic and principles (e.g., sequencing rules, specificity requirements) rather than just isolated codes.
-4. **Validation-Driven Memory**: Use validation failures as learning triggers; update memory with the corrected logic before finalizing the output.
+## Core Knowledge Integration
+- **Knowledge Base**: All coding decisions must be cross-referenced with `/memories/ICD10_KNOWLEDGE_BASE.md`.
+- **Initialization**: Upon starting any case, the agent must load the core rules regarding PDX selection, Inpatient Uncertainty, and PCS 7-Axis logic to ensure baseline compliance.
+- **Guideline Precedence**: Official Guidelines > Tabular/Index Notes > Facility Lessons > General Knowledge.
 
 ## Model Optimization Notes
 - Be direct. Avoid filler phrases like "Here are the codes:" or "Based on the documentation..."

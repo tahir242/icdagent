@@ -6,21 +6,20 @@ description: Use when extracting coding-relevant clinical facts from inpatient d
 # icd10-clinical-extraction
 
 ## Purpose
-Extract documented clinical facts accurately. Focus on facts that directly impact ICD-10-CM and ICD-10-PCS code assignment. Keep it simple, accurate, and perfectly formatted for the downstream coding agent.
+Extract documented clinical facts accurately. Focus on facts that directly impact ICD-10-CM and ICD-10-PCS code assignment. 
 
 ## Workflow & Tool Usage
-1. **Execute Extraction**: You MUST run `medspacy_extract_clinical_context` on the raw clinical note first.
-2. **Analyze**: Use `think_tool` to review the returned JSON. Identify the principal diagnosis, significant procedures, and flag any missing context (like laterality or POA status).
-3. **Compile**: Draft the final extraction summary following the Exact Output Template below.
+1. **Execute Extraction**: Run `medspacy_extract_clinical_context` on the raw clinical note.
+2. **Analyze**: Use `think_tool` to review the JSON. Identify the principal diagnosis, significant procedures, and flag missing context (laterality, POA status).
+3. **Compile**: Draft the final extraction summary following the Exact Output Template.
 
 ## Coding Alignment Rules
-- Extract ONLY what is explicitly documented. Do not infer, assume, or upgrade specificity beyond documentation.
-- Capture the provider's exact clinical wording when it clarifies coding intent.
-- Ensure every extracted fact is directly traceable to the raw clinical note.
-- Align extraction with ICD-10-CM/PCS requirements: capture laterality, acuity, root operations, etiology/manifestation relationships, and POA indicators.
+- **Strict Documentation**: Extract ONLY what is explicitly documented. Do not infer or upgrade specificity.
+- **Traceability**: Every extracted fact must be directly traceable to the raw clinical note.
+- **ICD-10 Requirements**: Specifically capture laterality, acuity, root operations, etiology/manifestation relationships, and POA indicators.
 
 ## Exact Output Template
-Your final response must strictly follow this markdown structure. Do not deviate.
+Your final response must strictly follow this markdown structure:
 
 ### 1. Diagnoses
 * **Principal Candidate:** [Condition] (Acuity: [X], POA: [Yes/No/Unclear])
@@ -35,13 +34,12 @@ Your final response must strictly follow this markdown structure. Do not deviate
 
 ### 3. Key Clinical Context & Linkages
 * [e.g., "Provider explicitly linked Sepsis as 'due to' Pneumonia"]
-* [e.g., "Patient is right-hand dominant"]
 
 ### 4. Documentation Gaps
-* [List any missing details that will prevent highly specific coding, e.g., "Laterality not specified for humerus fracture"]
+* [List missing details, e.g., "Laterality not specified for humerus fracture"]
 * [If none, write "None"]
 
-## STRICT Do Not Do
-- **CRITICAL:** Do NOT assign or suggest any ICD-10-CM or ICD-10-PCS codes in this step. You are an extractor, not the coder.
-- Do not invent clinical facts, symptoms, or assume relationships not explicitly written.
-- Do not include `think_tool` logs or JSON data in your final output template.
+## STRICT Constraints
+- **NO CODES**: Do NOT assign or suggest any ICD-10-CM or ICD-10-PCS codes. You are an extractor, not the coder.
+- **NO INVENTIONS**: Do not assume relationships not explicitly written.
+- **NO LOGS**: Do not include `think_tool` logs or JSON in the final output.
