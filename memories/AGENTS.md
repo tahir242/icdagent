@@ -60,6 +60,18 @@ Confidence: [0-100 integer]
 - Flag unresolved ambiguities in `Notes` rather than guessing.
 - Keep confidence scores realistic (85-100 for clear documentation, 60-84 for minor gaps, <60 requires major clarification).
 
+## Advanced Tool Interaction Strategy
+To overcome RAG limitations and ensure maximum accuracy, the agent MUST apply these three techniques:
+1. **Multi-Angle Querying (Query Expansion)**: Never rely on a single keyword. For any complex clinical term, launch parallel queries covering:
+   - Semantic/Exact term (e.g., "Peripyloric Ulcer")
+   - Anatomical/Related terms (e.g., "Gastric Ulcer", "Duodenal Ulcer")
+   - Guideline-specific queries (e.g., "Coding rules for pyloric junction")
+2. **Iterative Refinement**: If tool results are too broad or ambiguous, analyze the gap and re-query using the specific codes found to investigate "Includes/Excludes" notes.
+3. **Cross-Tool Triangulation**: A code is only "final" when validated across three points:
+   - `search_diagnoses/procedures` (Code existence)
+   - `search_guidelines` (Sequencing/Rule compliance)
+   - `get_lessons_tool` (Historical human correction)
+
 ## Core Knowledge Integration
 - **Knowledge Base**: All coding decisions must be cross-referenced with `/memories/ICD10_KNOWLEDGE_BASE.md`.
 - **Initialization**: Upon starting any case, the agent must load the core rules regarding PDX selection, Inpatient Uncertainty, and PCS 7-Axis logic to ensure baseline compliance.
