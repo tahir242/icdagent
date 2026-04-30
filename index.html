@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICD Agent - Medical Coding AI</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: { primary: { DEFAULT: '#06b6d4', 50: '#ecfeff', 100: '#cffafe', 200: '#a5f3fc', 300: '#67e8f9', 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2', 700: '#0e7490' } }
+        }
+      }
+    }
+  </script>
+  <style>
+    [v-cloak] { display: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .message-scroll::-webkit-scrollbar { width: 6px; }
+    .message-scroll::-webkit-scrollbar-track { background: transparent; }
+    .message-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
+    .message-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+    @keyframes pulse-dot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    .dot-animate span { animation: pulse-dot 1.4s infinite ease-in-out; display: inline-block; }
+    .dot-animate span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-animate span:nth-child(3) { animation-delay: 0.4s; }
+    .code-block { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; margin: 8px 0; font-size: 13px; line-height: 1.6; }
+    .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+    .fade-enter-from, .fade-leave-to { opacity: 0; }
+    .slide-enter-active, .slide-leave-active { transition: all 0.25s ease; }
+    .slide-enter-from, .slide-leave-to { transform: translateX(-12px); opacity: 0; }
+    .reasoning-enter-active { transition: all 0.3s ease; }
+    .reasoning-leave-active { transition: all 0.2s ease; }
+    .reasoning-enter-from, .reasoning-leave-to { opacity: 0; transform: translateY(-8px); }
+    .copy-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #e2e8f0; padding: 8px 16px; border-radius: 8px; font-size: 13px; z-index: 9999; animation: toastIn 0.2s ease, toastOut 0.2s ease 1.8s forwards; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+  <div id="app" v-cloak>
+    <div class="flex h-screen overflow-hidden">
+
+      <!-- ===== MOBILE OVERLAY ===== -->
+      <transition name="fade">
+        <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-black/60 z-40 lg:hidden"></div>
+      </transition>
+
+      <!-- ===== SIDEBAR ===== -->
+      <aside :class="sidebarClasses" class="fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300">
+
+        <!-- Sidebar Header -->
+        <div class="flex items-center border-b border-gray-800 shrink-0" :class="sidebarCollapsed ? 'justify-center p-4' : 'justify-between px-4 py-4'">
+          <div v-if="!sidebarCollapsed" class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center text-lg shadow-lg shadow-cyan-500/20">I</div>
+            <div>
+              <div class="font-semibold text-base tracking-tight">ICD Agent</div>
+              <div class="text-[11px] text-gray-500">Medical Coding AI</div>
+            </div>
+          </div>
+          <button @click="toggleSidebar" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition" :title="sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+            <svg class="w-5 h-5" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <div class="px-3 py-3 shrink-0">
+          <button @click="newThread" class="w-full flex items-center gap-2.5 bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-medium rounded-xl px-4 py-2.5 transition text-sm">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            <span v-if="!sidebarCollapsed">New Chat</span>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div v-if="!sidebarCollapsed" class="px-3 pb-2 shrink-0">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input v-model="searchQuery" type="text" placeholder="Search sessions..." class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
+          </div>
+        </div>
+
+        <!-- Thread List -->
+        <div class="flex-1 overflow-y-auto px-2 py-2 message-scroll">
+          <div v-if="filteredThreads.length === 0" class="px-3 py-8 text-center text-xs text-gray-600">No conversations yet</div>
+          <div v-for="(group, label) in groupedThreads" :key="label">
+            <div class="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{{ label }}</div>
+            <transition-group name="slide">
+              <div v-for="thread in group" :key="thread.id"
+                   @click="selectThread(thread.id)"
+                   @mouseenter="hoveredThread = thread.id"
+                   @mouseleave="hoveredThread = null"
+                   :class="activeThreadId === thread.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'"
+                   class="group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer mx-1 mb-0.5 transition">
+                <svg class="w-4 h-4 shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm truncate">{{ thread.title }}</div>
+                  <div class="text-[11px] text-gray-600 mt-0.5">{{ threadMessageCount(thread.id) }} messages</div>
+                </div>
+                <!-- Thread Actions (hover) -->
+                <div v-if="hoveredThread === thread.id" class="flex items-center gap-0.5 shrink-0">
+                  <button @click.stop="renameThread(thread.id)" class="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition" title="Rename">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z"/></svg>
+                  </button>
+                  <button @click.stop="deleteThread(thread.id)" class="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Delete">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  </button>
+                </div>
+              </div>
+            </transition-group>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="border-t border-gray-800 px-3 py-3 space-y-1 shrink-0">
+          <button @click="showBatchModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
+            <span class="text-base">📦</span>
+            <span v-if="!sidebarCollapsed">Batch Process</span>
+          </button>
+          <button @click="fetchLessons(); showLessonsModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
+            <span class="text-base">📚</span>
+            <span v-if="!sidebarCollapsed">Learned Lessons</span>
+          </button>
+          <div class="flex items-center gap-2 px-3 py-2 text-xs text-gray-600">
+            <div class="w-2 h-2 rounded-full" :class="serverOnline ? 'bg-green-500' : 'bg-red-500'"></div>
+            {{ serverOnline ? 'Server Online' : 'Server Offline' }}
+          </div>
+        </div>
+      </aside>
+
+      <!-- ===== MAIN CONTENT ===== -->
+      <main class="flex-1 flex flex-col min-w-0">
+
+        <!-- Topbar -->
+        <header class="h-14 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <!-- Mobile hamburger -->
+            <button @click="mobileSidebarOpen = !mobileSidebarOpen" class="lg:hidden text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <!-- Thread info -->
+            <div v-if="activeThreadId">
+              <div class="text-sm font-medium truncate max-w-[200px] lg:max-w-md">{{ activeThreadTitle }}</div>
+              <div class="text-[11px] text-gray-500 font-mono">Thread: {{ activeThreadId }}</div>
+            </div>
+            <div v-else class="text-sm font-medium text-gray-400">No active session</div>
+          </div>
+
+          <div class="flex items-center gap-2 lg:gap-4">
+
+            <!-- Dark/Light toggle -->
+            <button @click="toggleTheme" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition">
+              <svg v-if="isDark" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            </button>
+
+            <!-- User avatar -->
+            <div class="flex items-center gap-2 pl-2 border-l border-gray-700">
+              <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-xs font-bold">TC</div>
+            </div>
+          </div>
+        </header>
+
+        <!-- ===== CHAT AREA ===== -->
+        <div class="flex-1 flex flex-col min-h-0">
+
+          <!-- Welcome Screen -->
+          <div v-if="!activeThreadId" class="flex-1 flex items-center justify-center p-6">
+            <div class="max-w-lg text-center">
+              <div class="w-20 h-20 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl mx-auto mb-8 flex items-center justify-center text-4xl shadow-xl shadow-cyan-500/20">I</div>
+              <h1 class="text-3xl lg:text-4xl font-bold mb-3 tracking-tight">Welcome to ICD Agent</h1>
+              <p class="text-gray-400 mb-10 leading-relaxed">Paste a discharge summary, upload a file, or type your clinical notes. I will return accurate ICD-10-CM &amp; PCS codes following official 2026 guidelines.</p>
+              <div class="flex flex-wrap justify-center gap-3">
+                <label class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-5 py-3 rounded-xl cursor-pointer transition text-sm">
+                  <input type="file" ref="fileInput" @change="handleFileUpload" accept=".txt,.csv" class="hidden">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                  Upload file
+                </label>
+                <button @click="startDictation" class="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-400 text-gray-950 px-5 py-3 rounded-xl font-medium transition text-sm">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                  Voice input
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div v-else class="flex-1 overflow-y-auto message-scroll">
+            <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+              <!-- Empty thread -->
+              <div v-if="threadMessages(activeThreadId).length === 0 && !isLoading" class="text-center py-20">
+                <div class="text-5xl mb-4 opacity-40">📋</div>
+                <h2 class="text-xl font-semibold text-gray-300 mb-2">Start a new coding session</h2>
+                <p class="text-gray-500 text-sm max-w-sm mx-auto">Paste a discharge summary below and the agent will assign ICD-10-CM &amp; PCS codes.</p>
+              </div>
+
+              <!-- Messages list -->
+              <div v-for="(msg, i) in threadMessages(activeThreadId)" :key="i" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+
+                <!-- Assistant message -->
+                <div v-if="msg.role === 'assistant'" class="flex gap-3 max-w-[90%] lg:max-w-2xl">
+                  <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold shadow-lg shadow-cyan-500/10">I</div>
+                  <div class="flex-1 min-w-0">
+                    <!-- Reasoning section (collapsible) -->
+                    <div v-if="msg.reasoning && msg.reasoning.length > 0" class="mb-3">
+                      <button @click="toggleReasoning(i)" class="flex items-center gap-2 text-xs text-gray-500 hover:text-cyan-400 transition">
+                        <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="openReasoning.has(i) ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                        <span>{{ openReasoning.has(i) ? 'Hide' : 'Show' }} thinking ({{ msg.reasoning.length }} step{{ msg.reasoning.length > 1 ? 's' : '' }})</span>
+                      </button>
+                      <transition name="reasoning">
+                        <div v-if="openReasoning.has(i)" class="mt-2 space-y-2">
+                          <div v-for="(step, si) in msg.reasoning" :key="si" class="bg-gray-900/60 border border-gray-700/30 rounded-xl px-4 py-3 text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            <div class="flex items-start gap-2">
+                              <span class="w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{{ si + 1 }}</span>
+                              <span class="flex-1">{{ step }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </transition>
+                    </div>
+
+                    <!-- Assistant Message Content (Markdown) -->
+                    <div class="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed prose prose-invert max-w-none prose-p:my-1 prose-pre:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5" v-html="renderMarkdown(msg.content)"></div>
+
+                    <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+                      <!-- Copy button -->
+                      <div class="flex items-center gap-3">
+                        <button @click="copyToClipboard(msg.content)" class="text-gray-500 hover:text-cyan-400 transition p-0.5 rounded flex items-center gap-1" title="Copy message">
+                          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                          <span>Copy</span>
+                        </button>
+                      </div>
+
+                      <!-- Metadata -->
+                      <div class="flex items-center gap-3">
+                        <span v-if="msg.timestamp" class="text-gray-600">{{ formatTime(msg.timestamp) }}</span>
+                        <button @click="openCorrection(msg)" class="text-cyan-400 hover:text-cyan-300 transition">Send correction</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- User message -->
+                <div v-else class="max-w-[80%] lg:max-w-xl">
+                  <div class="bg-cyan-600/90 rounded-2xl rounded-tr-md px-4 py-3 text-sm whitespace-pre-wrap">{{ msg.content }}</div>
+                  <div class="mt-1.5 flex items-center justify-end gap-3">
+                    <button @click="copyToClipboard(msg.content)" class="text-gray-600 hover:text-cyan-400 transition p-0.5 rounded" title="Copy message">
+                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    </button>
+                    <span v-if="msg.timestamp" class="text-[11px] text-gray-600">{{ formatTime(msg.timestamp) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Loading indicator -->
+              <div v-if="isLoading" class="flex gap-3 max-w-2xl">
+                <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold shadow-lg shadow-cyan-500/10">I</div>
+                <div class="bg-gray-800/60 border border-gray-700/30 rounded-2xl rounded-tl-md px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <div class="dot-animate"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span></div>
+                    <span>{{ loadingStatus }}</span>
+                  </div>
+                  <div v-if="streamThinkingSteps.length > 0" class="mt-3 space-y-1.5">
+                    <div class="text-[11px] text-cyan-300/80 uppercase tracking-wider">Live Thinking</div>
+                    <div v-for="(step, si) in streamThinkingSteps.slice(-4)" :key="si" class="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap bg-gray-900/50 border border-gray-700/30 rounded-lg px-3 py-2">
+                      {{ step }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Bar -->
+          <div class="border-t border-gray-800 bg-gray-900/80 backdrop-blur-sm shrink-0">
+            <div class="max-w-4xl mx-auto px-4 py-3">
+              <div class="flex items-end gap-2">
+                <!-- File upload -->
+                <label class="cursor-pointer p-2.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition shrink-0" title="Upload file">
+                  <input type="file" ref="fileInput2" @change="handleFileUpload" accept=".txt,.csv" class="hidden">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                </label>
+
+                <!-- Dictation -->
+                <button @click="startDictation" :class="isListening ? 'text-red-400 bg-red-500/10 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-gray-800'" class="p-2.5 rounded-xl transition shrink-0" title="Voice input">
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                </button>
+
+                <!-- Textarea -->
+                <textarea v-model="inputText" @keydown.enter.exact.prevent="sendMessage" :placeholder="activeThreadId ? 'Paste discharge summary...' : 'Select or create a session first...'" :disabled="!activeThreadId || isLoading" rows="1" class="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none max-h-32 disabled:opacity-50 disabled:cursor-not-allowed transition"></textarea>
+
+                <!-- Send -->
+                <button @click="sendMessage" :disabled="!inputText.trim() || isLoading || !activeThreadId" class="w-10 h-10 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-950 rounded-xl flex items-center justify-center transition shrink-0 disabled:cursor-not-allowed">
+                  <svg v-if="!isLoading" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>
+                  <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                </button>
+              </div>
+              <div class="text-[11px] text-gray-600 mt-2 text-center">ICD Agent uses AI + official ICD-10-CM/PCS 2026 guidelines. Always verify codes manually.</div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ===== BATCH MODAL ===== -->
+    <transition name="fade">
+      <div v-if="showBatchModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+            <h2 class="text-lg font-semibold">Batch Coding</h2>
+            <button @click="showBatchModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="p-6 flex-1 overflow-y-auto">
+            <p class="text-sm text-gray-400 mb-3">Paste multiple discharge summaries, one per line. Each will be coded independently.</p>
+            <textarea v-model="batchInput" rows="10" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none" placeholder="Patient A: Chest pain, ruled out MI...&#10;Patient B: Type 2 diabetes with nephropathy...&#10;Patient C: Appendectomy, laparoscopic..."></textarea>
+          </div>
+          <div class="flex gap-3 px-6 py-4 border-t border-gray-800">
+            <button @click="runBatch" :disabled="batchProcessing" class="flex-1 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-700 text-gray-950 disabled:text-gray-500 py-3 rounded-xl font-medium transition">
+              {{ batchProcessing ? 'Processing...' : 'Process All (' + batchCount + ')' }}
+            </button>
+            <button @click="showBatchModal = false" class="px-6 py-3 border border-gray-700 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+          </div>
+          <!-- Results -->
+          <div v-if="batchResults.length > 0" class="border-t border-gray-800 p-6 max-h-60 overflow-y-auto">
+            <div v-for="(r, i) in batchResults" :key="i" class="mb-4 bg-gray-800/50 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-gray-400">Summary #{{ i + 1 }}</span>
+                <span class="text-xs font-mono text-gray-500">Done</span>
+              </div>
+              <pre class="text-xs text-gray-300 whitespace-pre-wrap">{{ r.result }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ===== LESSONS MODAL ===== -->
+    <transition name="fade">
+      <div v-if="showLessonsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+            <h2 class="text-lg font-semibold">Learned Lessons ({{ lessons.length }})</h2>
+            <div class="flex items-center gap-2">
+              <button @click="exportLessons" class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Export CSV
+              </button>
+              <button @click="showLessonsModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="flex-1 overflow-y-auto p-6">
+            <div v-if="lessons.length === 0" class="text-center py-12 text-gray-500">No corrections saved yet. Use the "Send correction" link on any agent response to teach the model.</div>
+            <table v-else class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wider">
+                  <th class="text-left py-3 pr-4 font-medium">Snippet</th>
+                  <th class="text-left py-3 pr-4 font-medium font-mono">Wrong</th>
+                  <th class="text-left py-3 pr-4 font-medium font-mono">Correct</th>
+                  <th class="text-left py-3 font-medium">Explanation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(lesson, i) in lessons" :key="i" class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
+                  <td class="py-3 pr-4 text-gray-400 max-w-xs truncate text-xs">{{ lesson.snippet }}</td>
+                  <td class="py-3 pr-4 font-mono text-red-400 text-xs">{{ lesson.wrong }}</td>
+                  <td class="py-3 pr-4 font-mono text-green-400 text-xs">{{ lesson.correct }}</td>
+                  <td class="py-3 text-gray-300 text-xs">{{ lesson.explanation }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ===== CORRECTION MODAL ===== -->
+    <transition name="fade">
+      <div v-if="correctionMsg !== null" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl">
+          <div class="px-6 py-4 border-b border-gray-800">
+            <h3 class="text-lg font-semibold">Send Correction to Agent</h3>
+            <p class="text-xs text-gray-500 mt-1">Teach the agent the correct code so it never makes this mistake again.</p>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">Wrong Code</label>
+              <input v-model="correction.wrong_code" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition" placeholder="e.g., J18.9">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">Correct Code</label>
+              <input v-model="correction.correct_code" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition" placeholder="e.g., J12.82">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1.5">Explanation</label>
+              <textarea v-model="correction.explanation" rows="3" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none transition" placeholder="Why was the code wrong? What guideline applies?"></textarea>
+            </div>
+          </div>
+          <div class="flex gap-3 px-6 py-4 border-t border-gray-800">
+            <button @click="submitCorrection" :disabled="!correction.wrong_code || !correction.correct_code" class="flex-1 bg-green-500 hover:bg-green-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-950 py-3 rounded-xl font-medium transition disabled:cursor-not-allowed">Save &amp; Teach Agent</button>
+            <button @click="correctionMsg = null" class="px-6 py-3 border border-gray-700 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ===== RENAME MODAL ===== -->
+    <transition name="fade">
+      <div v-if="renameModalTarget" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+          <h3 class="text-lg font-semibold mb-4">Rename Session</h3>
+          <input v-model="renameModalValue" @keydown.enter="confirmRename" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
+          <div class="flex gap-3 mt-4">
+            <button @click="confirmRename" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-gray-950 py-2.5 rounded-xl font-medium transition">Save</button>
+            <button @click="renameModalTarget = null; renameModalValue = ''" class="flex-1 border border-gray-700 py-2.5 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+  </div>
+
+  <!-- Copy toast notification -->
+  <transition name="fade">
+    <div v-if="showCopyToast" class="copy-toast">Copied to clipboard</div>
+  </transition>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+    const API = 'http://127.0.0.1:8000';
+
+    createApp({
+      setup() {
+        // State
+        const sidebarCollapsed = ref(false);
+        const mobileSidebarOpen = ref(false);
+        const isDark = ref(true);
+        const searchQuery = ref('');
+        const hoveredThread = ref(null);
+
+        // Threads
+        const threads = ref([]);       // [{ id, title, created_at, updated_at }, ...]
+        const activeThreadId = ref(null);
+
+        // Messages per thread: { threadId: [{ role, content, reasoning?, timestamp? }] }
+        const allMessages = ref({});
+
+        // Input
+        const inputText = ref('');
+        const isLoading = ref(false);
+        const loadingStatus = ref('Processing...');
+        const isListening = ref(false);
+        const serverOnline = ref(false);
+
+        // Modals
+        const showBatchModal = ref(false);
+        const batchInput = ref('');
+        const batchProcessing = ref(false);
+        const batchResults = ref([]);
+
+        const showLessonsModal = ref(false);
+        const lessons = ref([]);
+
+        const correctionMsg = ref(null);
+        const correction = ref({ wrong_code: '', correct_code: '', explanation: '' });
+
+        const renameModalTarget = ref(null);
+        const renameModalValue = ref('');
+
+        // File inputs
+        const fileInput = ref(null);
+        const fileInput2 = ref(null);
+
+        // Chat container ref for auto-scroll
+        const chatContainer = ref(null);
+
+        // Reasoning & copy
+        const openReasoning = ref(new Set());
+        const showCopyToast = ref(false);
+        const streamThinkingSteps = ref([]);
+
+        // ---- Computed ----
+        const sidebarClasses = computed(() => {
+          const base = 'flex flex-col overflow-hidden';
+          return sidebarCollapsed.value ? `${base} w-16` : `${base} w-72`;
+        });
+
+        const activeThreadTitle = computed(() => {
+          const t = threads.value.find(t => t.id === activeThreadId.value);
+          return t ? t.title : 'New Session';
+        });
+
+        const filteredThreads = computed(() => {
+          if (!searchQuery.value) return threads.value;
+          const q = searchQuery.value.toLowerCase();
+          return threads.value.filter(t => t.title.toLowerCase().includes(q));
+        });
+
+        const groupedThreads = computed(() => {
+          const groups = {};
+          const now = new Date();
+          filteredThreads.value.forEach(t => {
+            const d = new Date(t.updated_at);
+            const diffMs = now - d;
+            let label;
+            if (d.toDateString() === now.toDateString()) label = 'Today';
+            else if (diffMs < 2 * 86400000) label = 'Yesterday';
+            else if (diffMs < 7 * 86400000) label = 'Last 7 Days';
+            else label = 'Older';
+            if (!groups[label]) groups[label] = [];
+            groups[label].push(t);
+          });
+          return groups;
+        });
+
+        const batchCount = computed(() => batchInput.value.split('\n').filter(Boolean).length);
+
+        // ---- Methods ----
+        function toggleSidebar() { sidebarCollapsed.value = !sidebarCollapsed.value; }
+        function toggleTheme() {
+          isDark.value = !isDark.value;
+          document.documentElement.classList.toggle('dark', isDark.value);
+        }
+
+        function scrollToBottom() {
+          nextTick(() => {
+            const el = document.querySelector('.message-scroll');
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        }
+
+        function formatTime(iso) {
+          if (!iso) return '';
+          return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderMarkdown(text) {
+          if (!text) return '';
+          return marked.parse(text);
+        }
+
+        function threadMessageCount(tid) {
+          const thread = threads.value.find(t => t.id === tid);
+          if (thread && typeof thread.message_count === 'number') return thread.message_count;
+          return (allMessages.value[tid] || []).length;
+        }
+
+        function threadMessages(tid) {
+          return allMessages.value[tid] || [];
+        }
+
+        function toggleReasoning(index) {
+          const s = openReasoning.value;
+          if (s.has(index)) s.delete(index);
+          else s.add(index);
+          openReasoning.value = new Set(s);
+        }
+
+        async function copyToClipboard(text) {
+          try {
+            await navigator.clipboard.writeText(text);
+            showCopyToast.value = true;
+            setTimeout(() => { showCopyToast.value = false; }, 2000);
+          } catch {
+            // Fallback for older browsers
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopyToast.value = true;
+            setTimeout(() => { showCopyToast.value = false; }, 2000);
+          }
+        }
+
+        // ---- Thread CRUD ----
+        async function fetchThreads() {
+          try {
+            const res = await axios.get(`${API}/threads`);
+            threads.value = res.data.threads || [];
+          } catch (e) {
+            threads.value = [];
+          }
+        }
+
+        async function fetchThreadMessages(threadId) {
+          if (!threadId) return;
+          try {
+            const res = await axios.get(`${API}/threads/${threadId}/messages`);
+            allMessages.value[threadId] = res.data.messages || [];
+          } catch (e) {
+            allMessages.value[threadId] = allMessages.value[threadId] || [];
+          }
+        }
+
+        async function newThread() {
+          const res = await axios.post(`${API}/threads`, { title: 'New Session' });
+          const thread = res.data;
+          await fetchThreads();
+          activeThreadId.value = thread.id;
+          allMessages.value[thread.id] = [];
+          inputText.value = '';
+          streamThinkingSteps.value = [];
+          mobileSidebarOpen.value = false;
+        }
+
+        async function selectThread(id) {
+          activeThreadId.value = id;
+          inputText.value = '';
+          streamThinkingSteps.value = [];
+          mobileSidebarOpen.value = false;
+          if (!allMessages.value[id]) {
+            await fetchThreadMessages(id);
+          }
+        }
+
+        async function deleteThread(id) {
+          if (!confirm('Delete this session? This cannot be undone.')) return;
+          await axios.delete(`${API}/threads/${id}`);
+          threads.value = threads.value.filter(t => t.id !== id);
+          delete allMessages.value[id];
+          if (activeThreadId.value === id) {
+            activeThreadId.value = threads.value.length > 0 ? threads.value[0].id : null;
+            if (activeThreadId.value) await fetchThreadMessages(activeThreadId.value);
+          }
+        }
+
+        function renameThread(id) {
+          const t = threads.value.find(t => t.id === id);
+          if (!t) return;
+          renameModalTarget.value = id;
+          renameModalValue.value = t.title;
+        }
+
+        async function confirmRename() {
+          if (!renameModalTarget.value || !renameModalValue.value.trim()) return;
+          await axios.patch(`${API}/threads/${renameModalTarget.value}`, { title: renameModalValue.value.trim() });
+          await fetchThreads();
+          renameModalTarget.value = null;
+          renameModalValue.value = '';
+        }
+
+        // ---- Messaging (SSE streaming) ----
+        async function sendMessage() {
+          const text = inputText.value.trim();
+          if (!text || !activeThreadId.value || isLoading.value) return;
+
+          const currentThreadId = activeThreadId.value;
+          const now = new Date().toISOString();
+          if (!allMessages.value[currentThreadId]) allMessages.value[currentThreadId] = [];
+          allMessages.value[currentThreadId].push({ role: 'user', content: text, timestamp: now });
+
+          // Auto-update thread title from first message
+          const thread = threads.value.find(t => t.id === currentThreadId);
+          if (thread && thread.title === 'New Session') {
+            thread.title = text.substring(0, 55) + (text.length > 55 ? '...' : '');
+            thread.updated_at = now;
+            try {
+              await axios.patch(`${API}/threads/${thread.id}`, { title: thread.title });
+            } catch {}
+          }
+
+          inputText.value = '';
+          isLoading.value = true;
+          loadingStatus.value = 'Connecting...';
+          streamThinkingSteps.value = [];
+          scrollToBottom();
+
+          // Use SSE stream
+          const url = `${API}/code/stream`;
+          const body = JSON.stringify({ discharge_summary: text, thread_id: currentThreadId });
+
+          try {
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body,
+            });
+
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (!line.startsWith('data: ')) continue;
+                const jsonStr = line.slice(6).trim();
+                if (!jsonStr) continue;
+
+                let event;
+                try { event = JSON.parse(jsonStr); } catch { continue; }
+
+                if (event.type === 'status') {
+                  loadingStatus.value = 'Processing…';
+                } else if (event.type === 'thinking') {
+                  loadingStatus.value = 'Reasoning…';
+                  if (event.thought) {
+                    streamThinkingSteps.value.push(event.thought);
+                    scrollToBottom();
+                  }
+                } else if (event.type === 'result') {
+                  allMessages.value[currentThreadId].push({
+                    role: 'assistant',
+                    content: event.result || '',
+                    reasoning: event.reasoning || [],
+                    timestamp: event.timestamp || new Date().toISOString(),
+                  });
+                  loadingStatus.value = 'Done';
+                  await fetchThreads();
+                  await fetchThreadMessages(currentThreadId);
+                  scrollToBottom();
+                } else if (event.type === 'error') {
+                  throw new Error(event.error || 'Unknown error');
+                }
+              }
+            }
+
+          } catch (err) {
+            allMessages.value[currentThreadId].push({
+              role: 'assistant',
+              content: `Error: ${err.message}. Is the backend running on port 8000?`,
+              timestamp: new Date().toISOString(),
+            });
+          } finally {
+            isLoading.value = false;
+            loadingStatus.value = 'Processing...';
+            streamThinkingSteps.value = [];
+            scrollToBottom();
+          }
+        }
+
+        // ---- File Upload ----
+        function handleFileUpload(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            inputText.value = ev.target.result;
+            // Auto-send if there's an active thread
+            if (activeThreadId.value) sendMessage();
+          };
+          reader.readAsText(file);
+          e.target.value = '';  // Reset so same file can be re-uploaded
+        }
+
+        // ---- Dictation ----
+        function startDictation() {
+          if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert('Voice input is not supported in your browser. Use Chrome or Edge.');
+            return;
+          }
+          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          const rec = new SR();
+          rec.lang = 'en-US';
+          rec.interimResults = false;
+          isListening.value = true;
+          rec.onresult = (ev) => {
+            inputText.value += (inputText.value ? ' ' : '') + ev.results[0][0].transcript;
+            isListening.value = false;
+          };
+          rec.onerror = () => { isListening.value = false; };
+          rec.onend = () => { isListening.value = false; };
+          rec.start();
+        }
+
+        // ---- Batch ----
+        async function runBatch() {
+          const summaries = batchInput.value.split('\n').filter(Boolean);
+          if (!summaries.length) return;
+          batchProcessing.value = true;
+          batchResults.value = [];
+          try {
+            const res = await axios.post(`${API}/batch`, { summaries });
+            batchResults.value = res.data.results || [];
+          } catch (err) {
+            alert('Batch failed: ' + (err.response?.data?.detail || err.message));
+          } finally {
+            batchProcessing.value = false;
+          }
+        }
+
+        // ---- Lessons ----
+        async function fetchLessons() {
+          try {
+            const res = await axios.get(`${API}/lessons`);
+            lessons.value = res.data.data || [];
+          } catch (err) { lessons.value = []; }
+        }
+
+        async function exportLessons() {
+          try {
+            const csv = lessons.value.map(l =>
+              `"${(l.snippet||'').replace(/"/g,'""')}","${l.wrong}","${l.correct}","${(l.explanation||'').replace(/"/g,'""')}"`
+            ).join('\n');
+            const blob = new Blob(['snippet,wrong,correct,explanation\n' + csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'icd_lessons.csv'; a.click();
+          } catch { alert('Export failed'); }
+        }
+
+        // ---- Correction ----
+        function openCorrection(msg) { correctionMsg.value = msg; correction.value = { wrong_code: '', correct_code: '', explanation: '' }; }
+
+        async function submitCorrection() {
+          if (!correctionMsg.value) return;
+          // Get the first user message in the current thread as snippet
+          const msgs = allMessages.value[activeThreadId.value] || [];
+          const firstUser = msgs.find(m => m.role === 'user');
+          const snippet = firstUser ? firstUser.content.substring(0, 200) : '';
+          try {
+            await axios.post(`${API}/correct`, {
+              snippet,
+              wrong_code: correction.value.wrong_code,
+              correct_code: correction.value.correct_code,
+              explanation: correction.value.explanation,
+            });
+            correctionMsg.value = null;
+            // Show a brief success notification
+            alert('Correction saved! The agent has learned from this mistake.');
+          } catch (err) { alert('Failed to save correction: ' + err.message); }
+        }
+
+        // ---- Init ----
+        onMounted(async () => {
+          try {
+            await axios.get(`${API}/health`);
+            serverOnline.value = true;
+            await fetchThreads();
+          } catch { serverOnline.value = false; }
+
+          // Create initial thread if none, otherwise load first thread messages.
+          if (threads.value.length === 0) await newThread();
+          else await selectThread(threads.value[0].id);
+        });
+
+        return {
+          sidebarCollapsed, mobileSidebarOpen, isDark, searchQuery, hoveredThread,
+          threads, activeThreadId, allMessages, inputText, isLoading, loadingStatus,
+          isListening, serverOnline,
+          showBatchModal, batchInput, batchProcessing, batchResults,
+          showLessonsModal, lessons,
+          correctionMsg, correction,
+          renameModalTarget, renameModalValue,
+          fileInput, fileInput2, chatContainer,
+          openReasoning, showCopyToast, streamThinkingSteps,
+          sidebarClasses, activeThreadTitle, filteredThreads, groupedThreads,
+          batchCount,
+          toggleSidebar, toggleTheme, scrollToBottom, formatTime, renderMarkdown, threadMessageCount, threadMessages,
+          newThread, selectThread, deleteThread, renameThread, confirmRename, fetchThreadMessages,
+          sendMessage, handleFileUpload, startDictation,
+          runBatch, fetchLessons, exportLessons, openCorrection, submitCorrection,
+          toggleReasoning, copyToClipboard,
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

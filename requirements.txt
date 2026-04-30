@@ -1,0 +1,21 @@
+medspacy
+en_core_sci_md @ https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_md-0.5.4.tar.gz
+deepagents
+langchain
+langchain-core
+langchain-classic
+langchain-community
+langchain-chroma
+langchain-ollama
+langchain-openai
+langchain_huggingface
+langgraph-checkpoint-sqlite
+sentence-transformers
+fastapi
+uvicorn
+pandas
+requests
+httpx
+python-dotenv
+huggingface_hub
+rank_bm25

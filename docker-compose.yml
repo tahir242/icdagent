@@ -1,0 +1,27 @@
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    environment:
+      - LLM_PROVIDER=ollama
+      - LLM_MODEL=llama3.2
+      - EMBEDDING_PROVIDER=ollama
+      - EMBEDDING_MODEL=nomic-embed-text
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+volumes:
+  ollama:

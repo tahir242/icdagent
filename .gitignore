@@ -1,0 +1,36 @@
+# IDE
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+test_*.py
+*_test.py
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Runtime artifacts
+runtime/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.tmp
+lessons_export.csv
+
+# Node.js
+**/node_modules/
+
+# Large data and models
+models/
+data/
+
+# Local environment config
+python_env.json
