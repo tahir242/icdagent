@@ -47,28 +47,28 @@
     @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans antialiased">
   <div id="app" v-cloak>
     <div class="flex h-screen overflow-hidden">
 
       <!-- ===== MOBILE OVERLAY ===== -->
       <transition name="fade">
-        <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-black/60 z-40 lg:hidden"></div>
+        <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-white/20 dark:bg-gray-900/20 dark:bg-black/60 z-40 lg:hidden"></div>
       </transition>
 
       <!-- ===== SIDEBAR ===== -->
-      <aside :class="sidebarClasses" class="fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300">
+      <aside :class="sidebarClasses" class="fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300">
 
         <!-- Sidebar Header -->
-        <div class="flex items-center border-b border-gray-800 shrink-0" :class="sidebarCollapsed ? 'justify-center p-4' : 'justify-between px-4 py-4'">
+        <div class="flex items-center border-b border-gray-200 dark:border-gray-800 shrink-0" :class="sidebarCollapsed ? 'justify-center p-4' : 'justify-between px-4 py-4'">
           <div v-if="!sidebarCollapsed" class="flex items-center gap-3">
             <div class="w-9 h-9 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-xl flex items-center justify-center text-lg shadow-lg shadow-cyan-500/20">I</div>
             <div>
               <div class="font-semibold text-base tracking-tight">ICD Agent</div>
-              <div class="text-[11px] text-gray-500">Medical Coding AI</div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-500">Medical Coding AI</div>
             </div>
           </div>
-          <button @click="toggleSidebar" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition" :title="sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
+          <button @click="toggleSidebar" class="text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition" :title="sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'">
             <svg class="w-5 h-5" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
         </div>
@@ -84,34 +84,34 @@
         <!-- Search -->
         <div v-if="!sidebarCollapsed" class="px-3 pb-2 shrink-0">
           <div class="relative">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input v-model="searchQuery" type="text" placeholder="Search sessions..." class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input v-model="searchQuery" type="text" placeholder="Search sessions..." class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-700 dark:text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
           </div>
         </div>
 
         <!-- Thread List -->
         <div class="flex-1 overflow-y-auto px-2 py-2 message-scroll">
-          <div v-if="filteredThreads.length === 0" class="px-3 py-8 text-center text-xs text-gray-600">No conversations yet</div>
+          <div v-if="filteredThreads.length === 0" class="px-3 py-8 text-center text-xs text-gray-500 dark:text-gray-400">No conversations yet</div>
           <div v-for="(group, label) in groupedThreads" :key="label">
-            <div class="px-3 py-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{{ label }}</div>
+            <div class="px-3 py-2 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{{ label }}</div>
             <transition-group name="slide">
               <div v-for="thread in group" :key="thread.id"
                    @click="selectThread(thread.id)"
                    @mouseenter="hoveredThread = thread.id"
                    @mouseleave="hoveredThread = null"
-                   :class="activeThreadId === thread.id ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200'"
+                   :class="activeThreadId === thread.id ? 'bg-cyan-50 dark:bg-gray-800 text-cyan-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-200'"
                    class="group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer mx-1 mb-0.5 transition">
-                <svg class="w-4 h-4 shrink-0 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 <div class="flex-1 min-w-0">
                   <div class="text-sm truncate">{{ thread.title }}</div>
-                  <div class="text-[11px] text-gray-600 mt-0.5">{{ threadMessageCount(thread.id) }} messages</div>
+                  <div class="text-[11px] opacity-70 mt-0.5">{{ threadMessageCount(thread.id) }} messages</div>
                 </div>
                 <!-- Thread Actions (hover) -->
                 <div v-if="hoveredThread === thread.id" class="flex items-center gap-0.5 shrink-0">
-                  <button @click.stop="renameThread(thread.id)" class="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition" title="Rename">
+                  <button @click.stop="renameThread(thread.id)" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition" title="Rename">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z"/></svg>
                   </button>
-                  <button @click.stop="deleteThread(thread.id)" class="p-1 rounded hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition" title="Delete">
+                  <button @click.stop="deleteThread(thread.id)" class="p-1 rounded hover:bg-red-500/10 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition" title="Delete">
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                   </button>
                 </div>
@@ -121,16 +121,16 @@
         </div>
 
         <!-- Sidebar Footer -->
-        <div class="border-t border-gray-800 px-3 py-3 space-y-1 shrink-0">
-          <button @click="showBatchModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
+        <div class="border-t border-gray-200 dark:border-gray-800 px-3 py-3 space-y-1 shrink-0">
+          <button @click="showBatchModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition">
             <span class="text-base">📦</span>
             <span v-if="!sidebarCollapsed">Batch Process</span>
           </button>
-          <button @click="fetchLessons(); showLessonsModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition">
+          <button @click="fetchLessons(); showLessonsModal = true" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition">
             <span class="text-base">📚</span>
             <span v-if="!sidebarCollapsed">Learned Lessons</span>
           </button>
-          <div class="flex items-center gap-2 px-3 py-2 text-xs text-gray-600">
+          <div class="flex items-center gap-2 px-3 py-2 text-xs text-gray-400 dark:text-gray-600">
             <div class="w-2 h-2 rounded-full" :class="serverOnline ? 'bg-green-500' : 'bg-red-500'"></div>
             {{ serverOnline ? 'Server Online' : 'Server Offline' }}
           </div>
@@ -141,30 +141,30 @@
       <main class="flex-1 flex flex-col min-w-0">
 
         <!-- Topbar -->
-        <header class="h-14 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between shrink-0">
+        <header class="h-14 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-4 lg:px-6 flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
             <!-- Mobile hamburger -->
-            <button @click="mobileSidebarOpen = !mobileSidebarOpen" class="lg:hidden text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition">
+            <button @click="mobileSidebarOpen = !mobileSidebarOpen" class="lg:hidden text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
             <!-- Thread info -->
             <div v-if="activeThreadId">
               <div class="text-sm font-medium truncate max-w-[200px] lg:max-w-md">{{ activeThreadTitle }}</div>
-              <div class="text-[11px] text-gray-500 font-mono">Thread: {{ activeThreadId }}</div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-500 font-mono">Thread: {{ activeThreadId }}</div>
             </div>
-            <div v-else class="text-sm font-medium text-gray-400">No active session</div>
+            <div v-else class="text-sm font-medium text-gray-400 dark:text-gray-600 dark:text-gray-400">No active session</div>
           </div>
 
           <div class="flex items-center gap-2 lg:gap-4">
 
             <!-- Dark/Light toggle -->
-            <button @click="toggleTheme" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800 transition">
+            <button @click="toggleTheme" class="text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               <svg v-if="isDark" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
               <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             </button>
 
             <!-- User avatar -->
-            <div class="flex items-center gap-2 pl-2 border-l border-gray-700">
+            <div class="flex items-center gap-2 pl-2 border-l border-gray-300 dark:border-gray-700">
               <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-xs font-bold">TC</div>
             </div>
           </div>
@@ -178,9 +178,9 @@
             <div class="max-w-lg text-center">
               <div class="w-20 h-20 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl mx-auto mb-8 flex items-center justify-center text-4xl shadow-xl shadow-cyan-500/20">I</div>
               <h1 class="text-3xl lg:text-4xl font-bold mb-3 tracking-tight">Welcome to ICD Agent</h1>
-              <p class="text-gray-400 mb-10 leading-relaxed">Paste a discharge summary, upload a file, or type your clinical notes. I will return accurate ICD-10-CM &amp; PCS codes following official 2026 guidelines.</p>
+              <p class="text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-10 leading-relaxed">Paste a discharge summary, upload a file, or type your clinical notes. I will return accurate ICD-10-CM &amp; PCS codes following official 2026 guidelines.</p>
               <div class="flex flex-wrap justify-center gap-3">
-                <label class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 px-5 py-3 rounded-xl cursor-pointer transition text-sm">
+                <label class="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 px-5 py-3 rounded-xl cursor-pointer transition text-sm">
                   <input type="file" ref="fileInput" @change="handleFileUpload" accept=".txt,.csv" class="hidden">
                   <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                   Upload file
@@ -194,14 +194,14 @@
           </div>
 
           <!-- Messages -->
-          <div v-else class="flex-1 overflow-y-auto message-scroll">
+          <div v-else class="flex-1 overflow-y-auto message-scroll" ref="chatContainer">
             <div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
               <!-- Empty thread -->
               <div v-if="threadMessages(activeThreadId).length === 0 && !isLoading" class="text-center py-20">
                 <div class="text-5xl mb-4 opacity-40">📋</div>
-                <h2 class="text-xl font-semibold text-gray-300 mb-2">Start a new coding session</h2>
-                <p class="text-gray-500 text-sm max-w-sm mx-auto">Paste a discharge summary below and the agent will assign ICD-10-CM &amp; PCS codes.</p>
+                <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Start a new coding session</h2>
+                <p class="text-gray-500 dark:text-gray-500 text-sm max-w-sm mx-auto">Paste a discharge summary below and the agent will assign ICD-10-CM &amp; PCS codes.</p>
               </div>
 
               <!-- Messages list -->
@@ -213,13 +213,13 @@
                   <div class="flex-1 min-w-0">
                     <!-- Reasoning section (collapsible) -->
                     <div v-if="msg.reasoning && msg.reasoning.length > 0" class="mb-3">
-                      <button @click="toggleReasoning(i)" class="flex items-center gap-2 text-xs text-gray-500 hover:text-cyan-400 transition">
+                      <button @click="toggleReasoning(i)" class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500 hover:text-cyan-400 transition">
                         <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="openReasoning.has(i) ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                         <span>{{ openReasoning.has(i) ? 'Hide' : 'Show' }} thinking ({{ msg.reasoning.length }} step{{ msg.reasoning.length > 1 ? 's' : '' }})</span>
                       </button>
                       <transition name="reasoning">
                         <div v-if="openReasoning.has(i)" class="mt-2 space-y-2">
-                          <div v-for="(step, si) in msg.reasoning" :key="si" class="bg-gray-900/60 border border-gray-700/30 rounded-xl px-4 py-3 text-xs text-gray-300 leading-relaxed whitespace-pre-wrap">
+                          <div v-for="(step, si) in msg.reasoning" :key="si" class="bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700/30 rounded-xl px-4 py-3 text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                             <div class="flex items-start gap-2">
                               <span class="w-5 h-5 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{{ si + 1 }}</span>
                               <span class="flex-1">{{ step }}</span>
@@ -230,12 +230,12 @@
                     </div>
 
                     <!-- Assistant Message Content (Markdown) -->
-                    <div class="bg-gray-800/80 border border-gray-700/50 rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed prose prose-invert max-w-none prose-p:my-1 prose-pre:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5" v-html="renderMarkdown(msg.content)"></div>
+                    <div class="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/50 shadow-sm dark:shadow-none rounded-2xl rounded-tl-md px-4 py-3 text-sm leading-relaxed prose dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5" v-html="renderMarkdown(msg.content)"></div>
 
-                    <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+                    <div class="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
                       <!-- Copy button -->
                       <div class="flex items-center gap-3">
-                        <button @click="copyToClipboard(msg.content)" class="text-gray-500 hover:text-cyan-400 transition p-0.5 rounded flex items-center gap-1" title="Copy message">
+                        <button @click="copyToClipboard(msg.content)" class="text-gray-500 dark:text-gray-500 hover:text-cyan-400 transition p-0.5 rounded flex items-center gap-1" title="Copy message">
                           <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                           <span>Copy</span>
                         </button>
@@ -243,7 +243,7 @@
 
                       <!-- Metadata -->
                       <div class="flex items-center gap-3">
-                        <span v-if="msg.timestamp" class="text-gray-600">{{ formatTime(msg.timestamp) }}</span>
+                        <span v-if="msg.timestamp" class="text-gray-400 dark:text-gray-600">{{ formatTime(msg.timestamp) }}</span>
                         <button @click="openCorrection(msg)" class="text-cyan-400 hover:text-cyan-300 transition">Send correction</button>
                       </div>
                     </div>
@@ -251,28 +251,46 @@
                 </div>
 
                 <!-- User message -->
-                <div v-else class="max-w-[80%] lg:max-w-xl">
-                  <div class="bg-cyan-600/90 rounded-2xl rounded-tr-md px-4 py-3 text-sm whitespace-pre-wrap">{{ msg.content }}</div>
-                  <div class="mt-1.5 flex items-center justify-end gap-3">
-                    <button @click="copyToClipboard(msg.content)" class="text-gray-600 hover:text-cyan-400 transition p-0.5 rounded" title="Copy message">
-                      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </button>
-                    <span v-if="msg.timestamp" class="text-[11px] text-gray-600">{{ formatTime(msg.timestamp) }}</span>
+                <div v-else class="flex gap-3 max-w-[90%] lg:max-w-2xl justify-end">
+                  <div class="flex-1 min-w-0 max-w-[80%] lg:max-w-xl flex flex-col items-end">
+                    <div v-if="editingMessageId === msg.id && msg.id" class="w-full">
+                      <textarea v-model="editingMessageContent" class="w-full bg-gray-100/80 dark:bg-gray-800/80 border border-gray-300/50 dark:border-gray-700/50 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 min-h-[100px] resize-y"></textarea>
+                      <div class="mt-2 flex justify-end gap-2">
+                        <button @click="cancelEdit()" class="px-3 py-1.5 text-xs text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition">Cancel</button>
+                        <button @click="saveAndResend(msg.id)" class="px-3 py-1.5 text-xs bg-cyan-600 hover:bg-cyan-500 text-gray-900 dark:text-white rounded-lg transition">Save &amp; Resend</button>
+                      </div>
+                    </div>
+                    <div v-else class="flex flex-col items-end">
+                      <div class="bg-cyan-600 rounded-2xl rounded-tr-md px-4 py-3 text-sm text-white shadow-sm whitespace-pre-wrap text-left inline-block">{{ msg.content }}</div>
+                      <div class="mt-1.5 flex items-center justify-end gap-3 w-full">
+                        <button v-if="msg.id" @click="startEdit(msg)" class="text-gray-400 dark:text-gray-600 hover:text-cyan-400 transition p-0.5 rounded" title="Edit message">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z"/></svg>
+                        </button>
+                        <button v-if="msg.id" @click="resendMessage(msg.id, msg.content)" class="text-gray-400 dark:text-gray-600 hover:text-cyan-400 transition p-0.5 rounded" title="Resend message">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        </button>
+                        <button @click="copyToClipboard(msg.content)" class="text-gray-400 dark:text-gray-600 hover:text-cyan-400 transition p-0.5 rounded" title="Copy message">
+                          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </button>
+                        <span v-if="msg.timestamp" class="text-[11px] text-gray-400 dark:text-gray-600">{{ formatTime(msg.timestamp) }}</span>
+                      </div>
+                    </div>
                   </div>
+                  <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold shadow-lg shadow-purple-500/10 text-white">TC</div>
                 </div>
               </div>
 
               <!-- Loading indicator -->
               <div v-if="isLoading" class="flex gap-3 max-w-2xl">
                 <div class="w-8 h-8 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-lg shrink-0 flex items-center justify-center text-sm font-bold shadow-lg shadow-cyan-500/10">I</div>
-                <div class="bg-gray-800/60 border border-gray-700/30 rounded-2xl rounded-tl-md px-5 py-4">
-                  <div class="flex items-center gap-2 text-sm text-gray-400">
+                <div class="bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/30 dark:border-gray-700/30 rounded-2xl rounded-tl-md px-5 py-4">
+                  <div class="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-600 dark:text-gray-400">
                     <div class="dot-animate"><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span><span class="w-1.5 h-1.5 bg-gray-400 rounded-full inline-block"></span></div>
                     <span>{{ loadingStatus }}</span>
                   </div>
                   <div v-if="streamThinkingSteps.length > 0" class="mt-3 space-y-1.5">
                     <div class="text-[11px] text-cyan-300/80 uppercase tracking-wider">Live Thinking</div>
-                    <div v-for="(step, si) in streamThinkingSteps.slice(-4)" :key="si" class="text-xs text-gray-300 leading-relaxed whitespace-pre-wrap bg-gray-900/50 border border-gray-700/30 rounded-lg px-3 py-2">
+                    <div v-for="(step, si) in streamThinkingSteps.slice(-4)" :key="si" class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap bg-white/50 dark:bg-gray-900/50 border border-gray-300/30 dark:border-gray-700/30 rounded-lg px-3 py-2">
                       {{ step }}
                     </div>
                   </div>
@@ -282,30 +300,42 @@
           </div>
 
           <!-- Input Bar -->
-          <div class="border-t border-gray-800 bg-gray-900/80 backdrop-blur-sm shrink-0">
-            <div class="max-w-4xl mx-auto px-4 py-3">
-              <div class="flex items-end gap-2">
+          <div class="bg-gray-50 dark:bg-gray-950 pb-4 pt-2 shrink-0">
+            <div class="max-w-4xl mx-auto px-4">
+              <div class="bg-white dark:bg-gray-800/80 rounded-[26px] flex items-end gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700/50 focus-within:border-cyan-500/50 transition-all shadow-md dark:shadow-lg">
                 <!-- File upload -->
-                <label class="cursor-pointer p-2.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition shrink-0" title="Upload file">
+                <label class="cursor-pointer p-2 mb-0.5 text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition shrink-0 rounded-full hover:bg-gray-200/50 dark:hover:bg-gray-700/50" title="Upload file">
                   <input type="file" ref="fileInput2" @change="handleFileUpload" accept=".txt,.csv" class="hidden">
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                 </label>
 
-                <!-- Dictation -->
-                <button @click="startDictation" :class="isListening ? 'text-red-400 bg-red-500/10 animate-pulse' : 'text-gray-400 hover:text-white hover:bg-gray-800'" class="p-2.5 rounded-xl transition shrink-0" title="Voice input">
-                  <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-                </button>
-
                 <!-- Textarea -->
-                <textarea v-model="inputText" @keydown.enter.exact.prevent="sendMessage" :placeholder="activeThreadId ? 'Paste discharge summary...' : 'Select or create a session first...'" :disabled="!activeThreadId || isLoading" rows="1" class="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none max-h-32 disabled:opacity-50 disabled:cursor-not-allowed transition"></textarea>
+                <textarea 
+                  v-model="inputText" 
+                  @input="resizeTextarea"
+                  @keydown.enter.exact.prevent="sendMessage"
+                  @keydown.shift.enter.exact="handleNewLine"
+                  :placeholder="activeThreadId ? 'Ask anything...' : 'Select or create a session first...'" 
+                  :disabled="!activeThreadId || isLoading" 
+                  rows="1" 
+                  class="flex-1 bg-transparent border-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-500 focus:ring-0 resize-none max-h-[100px] py-2.5 disabled:opacity-50 disabled:cursor-not-allowed scrollbar-hide focus:outline-none w-full"
+                ></textarea>
 
-                <!-- Send -->
-                <button @click="sendMessage" :disabled="!inputText.trim() || isLoading || !activeThreadId" class="w-10 h-10 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-950 rounded-xl flex items-center justify-center transition shrink-0 disabled:cursor-not-allowed">
-                  <svg v-if="!isLoading" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-7 7m7-7l7 7"/></svg>
-                  <svg v-else class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                </button>
+                <!-- Right Actions -->
+                <div class="flex items-center gap-1.5 mb-0.5 shrink-0">
+                  <!-- Dictation -->
+                  <button @click="startDictation" :class="isListening ? 'text-red-400 bg-red-500/10 animate-pulse' : 'text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/50 dark:hover:bg-gray-700/50'" class="p-2.5 rounded-full transition flex items-center justify-center shrink-0" title="Voice input">
+                    <svg class="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+                  </button>
+
+                  <!-- Send -->
+                  <button @click="sendMessage" :disabled="!inputText.trim() || isLoading || !activeThreadId" class="w-9 h-9 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-950 rounded-full flex items-center justify-center transition shrink-0 disabled:cursor-not-allowed">
+                    <svg v-if="!isLoading" class="w-4 h-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                  </button>
+                </div>
               </div>
-              <div class="text-[11px] text-gray-600 mt-2 text-center">ICD Agent uses AI + official ICD-10-CM/PCS 2026 guidelines. Always verify codes manually.</div>
+              <div class="text-[11px] text-gray-400 dark:text-gray-600 mt-2 text-center">ICD Agent uses AI + official ICD-10-CM/PCS 2026 guidelines. Always verify codes manually.</div>
             </div>
           </div>
         </div>
@@ -314,32 +344,32 @@
 
     <!-- ===== BATCH MODAL ===== -->
     <transition name="fade">
-      <div v-if="showBatchModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+      <div v-if="showBatchModal" class="fixed inset-0 bg-white/30 dark:bg-gray-900/30 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
             <h2 class="text-lg font-semibold">Batch Coding</h2>
-            <button @click="showBatchModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+            <button @click="showBatchModal = false" class="text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="p-6 flex-1 overflow-y-auto">
-            <p class="text-sm text-gray-400 mb-3">Paste multiple discharge summaries, one per line. Each will be coded independently.</p>
-            <textarea v-model="batchInput" rows="10" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl p-4 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none" placeholder="Patient A: Chest pain, ruled out MI...&#10;Patient B: Type 2 diabetes with nephropathy...&#10;Patient C: Appendectomy, laparoscopic..."></textarea>
+            <p class="text-sm text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-3">Paste multiple discharge summaries, one per line. Each will be coded independently.</p>
+            <textarea v-model="batchInput" rows="10" class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl p-4 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none" placeholder="Patient A: Chest pain, ruled out MI...&#10;Patient B: Type 2 diabetes with nephropathy...&#10;Patient C: Appendectomy, laparoscopic..."></textarea>
           </div>
-          <div class="flex gap-3 px-6 py-4 border-t border-gray-800">
+          <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800">
             <button @click="runBatch" :disabled="batchProcessing" class="flex-1 bg-cyan-500 hover:bg-cyan-400 disabled:bg-gray-700 text-gray-950 disabled:text-gray-500 py-3 rounded-xl font-medium transition">
               {{ batchProcessing ? 'Processing...' : 'Process All (' + batchCount + ')' }}
             </button>
-            <button @click="showBatchModal = false" class="px-6 py-3 border border-gray-700 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+            <button @click="showBatchModal = false" class="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Cancel</button>
           </div>
           <!-- Results -->
-          <div v-if="batchResults.length > 0" class="border-t border-gray-800 p-6 max-h-60 overflow-y-auto">
-            <div v-for="(r, i) in batchResults" :key="i" class="mb-4 bg-gray-800/50 rounded-xl p-4">
+          <div v-if="batchResults.length > 0" class="border-t border-gray-200 dark:border-gray-800 p-6 max-h-60 overflow-y-auto">
+            <div v-for="(r, i) in batchResults" :key="i" class="mb-4 bg-gray-100/50 dark:bg-gray-800/50 rounded-xl p-4">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-medium text-gray-400">Summary #{{ i + 1 }}</span>
-                <span class="text-xs font-mono text-gray-500">Done</span>
+                <span class="text-xs font-medium text-gray-400 dark:text-gray-600 dark:text-gray-400">Summary #{{ i + 1 }}</span>
+                <span class="text-xs font-mono text-gray-500 dark:text-gray-500">Done</span>
               </div>
-              <pre class="text-xs text-gray-300 whitespace-pre-wrap">{{ r.result }}</pre>
+              <pre class="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ r.result }}</pre>
             </div>
           </div>
         </div>
@@ -348,25 +378,25 @@
 
     <!-- ===== LESSONS MODAL ===== -->
     <transition name="fade">
-      <div v-if="showLessonsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+      <div v-if="showLessonsModal" class="fixed inset-0 bg-white/30 dark:bg-gray-900/30 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
             <h2 class="text-lg font-semibold">Learned Lessons ({{ lessons.length }})</h2>
             <div class="flex items-center gap-2">
               <button @click="exportLessons" class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1.5 transition">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Export CSV
               </button>
-              <button @click="showLessonsModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+              <button @click="showLessonsModal = false" class="text-gray-400 dark:text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
           </div>
           <div class="flex-1 overflow-y-auto p-6">
-            <div v-if="lessons.length === 0" class="text-center py-12 text-gray-500">No corrections saved yet. Use the "Send correction" link on any agent response to teach the model.</div>
+            <div v-if="lessons.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-500">No corrections saved yet. Use the "Send correction" link on any agent response to teach the model.</div>
             <table v-else class="w-full text-sm">
               <thead>
-                <tr class="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wider">
+                <tr class="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-500 text-xs uppercase tracking-wider">
                   <th class="text-left py-3 pr-4 font-medium">Snippet</th>
                   <th class="text-left py-3 pr-4 font-medium font-mono">Wrong</th>
                   <th class="text-left py-3 pr-4 font-medium font-mono">Correct</th>
@@ -374,11 +404,11 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(lesson, i) in lessons" :key="i" class="border-b border-gray-800/50 hover:bg-gray-800/30 transition">
-                  <td class="py-3 pr-4 text-gray-400 max-w-xs truncate text-xs">{{ lesson.snippet }}</td>
+                <tr v-for="(lesson, i) in lessons" :key="i" class="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-100/30 dark:hover:bg-gray-800/30 transition">
+                  <td class="py-3 pr-4 text-gray-400 dark:text-gray-600 dark:text-gray-400 max-w-xs truncate text-xs">{{ lesson.snippet }}</td>
                   <td class="py-3 pr-4 font-mono text-red-400 text-xs">{{ lesson.wrong }}</td>
                   <td class="py-3 pr-4 font-mono text-green-400 text-xs">{{ lesson.correct }}</td>
-                  <td class="py-3 text-gray-300 text-xs">{{ lesson.explanation }}</td>
+                  <td class="py-3 text-gray-700 dark:text-gray-300 text-xs">{{ lesson.explanation }}</td>
                 </tr>
               </tbody>
             </table>
@@ -389,29 +419,29 @@
 
     <!-- ===== CORRECTION MODAL ===== -->
     <transition name="fade">
-      <div v-if="correctionMsg !== null" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl">
-          <div class="px-6 py-4 border-b border-gray-800">
+      <div v-if="correctionMsg !== null" class="fixed inset-0 bg-white/30 dark:bg-gray-900/30 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-lg shadow-2xl">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
             <h3 class="text-lg font-semibold">Send Correction to Agent</h3>
-            <p class="text-xs text-gray-500 mt-1">Teach the agent the correct code so it never makes this mistake again.</p>
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Teach the agent the correct code so it never makes this mistake again.</p>
           </div>
           <div class="p-6 space-y-4">
             <div>
-              <label class="block text-xs text-gray-400 mb-1.5">Wrong Code</label>
-              <input v-model="correction.wrong_code" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition" placeholder="e.g., J18.9">
+              <label class="block text-xs text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-1.5">Wrong Code</label>
+              <input v-model="correction.wrong_code" class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 transition" placeholder="e.g., J18.9">
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1.5">Correct Code</label>
-              <input v-model="correction.correct_code" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition" placeholder="e.g., J12.82">
+              <label class="block text-xs text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-1.5">Correct Code</label>
+              <input v-model="correction.correct_code" class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20 transition" placeholder="e.g., J12.82">
             </div>
             <div>
-              <label class="block text-xs text-gray-400 mb-1.5">Explanation</label>
-              <textarea v-model="correction.explanation" rows="3" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none transition" placeholder="Why was the code wrong? What guideline applies?"></textarea>
+              <label class="block text-xs text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-1.5">Explanation</label>
+              <textarea v-model="correction.explanation" rows="3" class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl px-4 py-2.5 text-sm text-gray-800 dark:text-gray-200 placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 resize-none transition" placeholder="Why was the code wrong? What guideline applies?"></textarea>
             </div>
           </div>
-          <div class="flex gap-3 px-6 py-4 border-t border-gray-800">
+          <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-800">
             <button @click="submitCorrection" :disabled="!correction.wrong_code || !correction.correct_code" class="flex-1 bg-green-500 hover:bg-green-400 disabled:bg-gray-700 disabled:text-gray-500 text-gray-950 py-3 rounded-xl font-medium transition disabled:cursor-not-allowed">Save &amp; Teach Agent</button>
-            <button @click="correctionMsg = null" class="px-6 py-3 border border-gray-700 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+            <button @click="correctionMsg = null" class="px-6 py-3 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Cancel</button>
           </div>
         </div>
       </div>
@@ -419,13 +449,13 @@
 
     <!-- ===== RENAME MODAL ===== -->
     <transition name="fade">
-      <div v-if="renameModalTarget" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+      <div v-if="renameModalTarget" class="fixed inset-0 bg-white/30 dark:bg-gray-900/30 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl w-full max-w-sm shadow-2xl p-6">
           <h3 class="text-lg font-semibold mb-4">Rename Session</h3>
-          <input v-model="renameModalValue" @keydown.enter="confirmRename" class="w-full bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
+          <input v-model="renameModalValue" @keydown.enter="confirmRename" class="w-full bg-gray-100/60 dark:bg-gray-800/60 border border-gray-300/50 dark:border-gray-700/50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition">
           <div class="flex gap-3 mt-4">
             <button @click="confirmRename" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-gray-950 py-2.5 rounded-xl font-medium transition">Save</button>
-            <button @click="renameModalTarget = null; renameModalValue = ''" class="flex-1 border border-gray-700 py-2.5 rounded-xl hover:bg-gray-800 transition">Cancel</button>
+            <button @click="renameModalTarget = null; renameModalValue = ''" class="flex-1 border border-gray-300 dark:border-gray-700 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Cancel</button>
           </div>
         </div>
       </div>
@@ -493,6 +523,19 @@
         const showCopyToast = ref(false);
         const streamThinkingSteps = ref([]);
 
+        const editingMessageId = ref(null);
+        const editingMessageContent = ref('');
+
+        watch(inputText, (newVal) => {
+          nextTick(() => {
+            const ta = document.querySelector('textarea.flex-1');
+            if (ta) {
+              ta.style.height = 'auto'; // Reset the height first
+              ta.style.height = ta.scrollHeight + 'px'; // Expand to wrap new text
+            }
+          });
+        });
+
         // ---- Computed ----
         const sidebarClasses = computed(() => {
           const base = 'flex flex-col overflow-hidden';
@@ -538,8 +581,12 @@
 
         function scrollToBottom() {
           nextTick(() => {
-            const el = document.querySelector('.message-scroll');
-            if (el) el.scrollTop = el.scrollHeight;
+            if (chatContainer.value) {
+              chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+            } else {
+              const el = document.querySelectorAll('.message-scroll')[1];
+              if (el) el.scrollTop = el.scrollHeight;
+            }
           });
         }
 
@@ -769,6 +816,18 @@
           e.target.value = '';  // Reset so same file can be re-uploaded
         }
 
+        function resizeTextarea(e) {
+          const el = e.target;
+          el.style.height = 'auto'; // Reset the height
+          el.style.height = el.scrollHeight + 'px'; // Set to scroll height
+        }
+
+        function handleNewLine(e) {
+          // Default behavior of Shift+Enter in a textarea naturally adds a newline.
+          // By calling resizeTextarea, we ensure the container height adapts instantly.
+          nextTick(() => { resizeTextarea({ target: e.target }); });
+        }
+
         // ---- Dictation ----
         function startDictation() {
           if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -787,6 +846,43 @@
           rec.onerror = () => { isListening.value = false; };
           rec.onend = () => { isListening.value = false; };
           rec.start();
+        }
+
+        // ---- Message Actions ----
+        function startEdit(msg) {
+          editingMessageId.value = msg.id;
+          editingMessageContent.value = msg.content;
+        }
+
+        function cancelEdit() {
+          editingMessageId.value = null;
+          editingMessageContent.value = '';
+        }
+
+        async function saveAndResend(msgId) {
+          if (isLoading.value) return;
+          const content = editingMessageContent.value.trim();
+          if (!content) return;
+          
+          try {
+            await axios.delete(`${API}/threads/${activeThreadId.value}/messages/${msgId}`);
+            cancelEdit();
+            inputText.value = content;
+            sendMessage();
+          } catch (e) {
+            alert('Failed to edit message: ' + e.message);
+          }
+        }
+
+        async function resendMessage(msgId, content) {
+          if (isLoading.value) return;
+          try {
+            await axios.delete(`${API}/threads/${activeThreadId.value}/messages/${msgId}`);
+            inputText.value = content;
+            await sendMessage();
+          } catch (e) {
+            alert('Failed to resend message: ' + e.message);
+          }
         }
 
         // ---- Batch ----
@@ -875,7 +971,8 @@
           newThread, selectThread, deleteThread, renameThread, confirmRename, fetchThreadMessages,
           sendMessage, handleFileUpload, startDictation,
           runBatch, fetchLessons, exportLessons, openCorrection, submitCorrection,
-          toggleReasoning, copyToClipboard,
+          toggleReasoning, copyToClipboard, startEdit, cancelEdit, saveAndResend, resendMessage,
+          editingMessageId, editingMessageContent, resizeTextarea, handleNewLine,
         };
       }
     }).mount('#app');

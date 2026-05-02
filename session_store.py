@@ -91,6 +91,23 @@ def get_thread(thread_id: str, raise_missing: bool = True) -> dict | None:
     return dict(row)
 
 
+def delete_messages_from(thread_id: str, from_message_id: int) -> bool:
+    """Delete a message and all subsequent messages in a thread."""
+    with _db_lock:
+        with _connect() as conn:
+            result = conn.execute(
+                "DELETE FROM messages WHERE thread_id = ? AND id >= ?",
+                (thread_id, from_message_id)
+            )
+            # Update thread updated_at timestamp
+            if result.rowcount > 0:
+                conn.execute(
+                    "UPDATE threads SET updated_at = ? WHERE id = ?",
+                    (datetime.now().isoformat(), thread_id)
+                )
+    return result.rowcount > 0
+
+
 def list_threads(limit: int = 50, offset: int = 0) -> list[dict]:
     with _db_lock:
         with _connect() as conn:
@@ -160,7 +177,7 @@ def list_messages(thread_id: str) -> list[dict]:
         with _connect() as conn:
             rows = conn.execute(
                 """
-                SELECT role, content, reasoning, timestamp
+                SELECT id, role, content, reasoning, timestamp
                 FROM messages
                 WHERE thread_id = ?
                 ORDER BY id ASC
@@ -178,6 +195,7 @@ def list_messages(thread_id: str) -> list[dict]:
                 reasoning_value = []
         messages.append(
             {
+                "id": row["id"],
                 "role": row["role"],
                 "content": row["content"],
                 "reasoning": reasoning_value,

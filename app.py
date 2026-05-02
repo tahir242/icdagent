@@ -18,6 +18,7 @@ from session_store import (
     add_message,
     create_thread,
     delete_thread,
+    delete_messages_from,
     ensure_thread_exists,
     get_thread,
     init_session_db,
@@ -118,6 +119,14 @@ async def delete_thread_endpoint(thread_id: str):
     if not deleted:
         raise HTTPException(status_code=404, detail="Thread not found.")
     return {"status": "deleted", "thread_id": thread_id}
+
+
+@app.delete("/threads/{thread_id}/messages/{message_id}")
+async def delete_messages_from_endpoint(thread_id: str, message_id: int):
+    deleted = await run_in_threadpool(delete_messages_from, thread_id, message_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Message not found or already deleted.")
+    return {"status": "deleted", "thread_id": thread_id, "from_message_id": message_id}
 
 
 @app.post("/code")
