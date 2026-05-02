@@ -17,8 +17,12 @@
 - **Excludes1**: A pure "not coded here" instruction. The two codes cannot be used together.
 - **Excludes2**: "Not included here." The patient may have both conditions, and both can be coded.
 
-## ICD-10-PCS (Procedures)
-### 1. The 7-Axis Structure
+### 5. Advanced Nuances & Audit Traps
+- **Infection Depth**: Distinguish between "Deep Incisional" and "Organ/Space." If infection is at an anastomosis junction or involves the peritoneal cavity/internal organs, use Organ/Space (e.g., T81.43-), even if a surgical incision was reopened to access it.
+- **PCS Body Part Precision**: Never assume body part values. Always verify the specific character (e.g., Ileum = 'B', Cecum = 'T'). A single character error changes the entire anatomical site.
+- **Inherent Procedures**: Do not code "Inspection" (e.g., 0WJG0ZZ) if it is performed as part of a therapeutic procedure (e.g., Drainage/Lavage 0W9G0ZZ) unless the inspection is the primary objective or provides distinct diagnostic value beyond the therapeutic act.
+- **Specificity over "Unspecified"**: Avoid "part unspecified" codes if the documentation provides a specific anatomical site (e.g., use small intestine/ileum specific codes over general intestinal infarction codes).
+
 - **Character 1**: Section (e.g., 0 = Medical and Surgical)
 - **Character 2**: Body System (e.g., 2 = Heart)
 - **Character 3**: Root Operation (The objective of the procedure, e.g., Resection, Excision, Bypass)

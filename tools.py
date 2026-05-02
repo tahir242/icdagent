@@ -38,6 +38,7 @@ LESSONS_TOP_K = int(os.getenv("LESSONS_TOP_K", "2"))
 LESSONS_MAX_CHARS = int(os.getenv("LESSONS_MAX_CHARS", "1600"))
 MEDSPACY_DEFAULT_MAX_ENTITIES = int(os.getenv("MEDSPACY_DEFAULT_MAX_ENTITIES", "150"))
 MEDSPACY_SENTENCE_MAX_CHARS = int(os.getenv("MEDSPACY_SENTENCE_MAX_CHARS", "300"))
+MEDSPACY_SUMMARY_MAX_CHARS = int(os.getenv("MEDSPACY_SUMMARY_MAX_CHARS", "1200"))
 
 # ============================================================
 # TOOL 0: Shared reasoning support – used by think_tool and captured by the agent runner
@@ -118,6 +119,36 @@ def _truncate_text(text: str, max_chars: int) -> str:
     if max_chars <= 0 or len(text) <= max_chars:
         return text
     return text[:max_chars].rstrip() + "... [truncated]"
+
+
+def _format_clinical_summary(grouped: Dict[str, List[str]], acuity: List[str], laterality: List[str]) -> Dict[str, Any]:
+    summary_lines: List[str] = []
+    if grouped.get("findings"):
+        summary_lines.append(f"Findings: {', '.join(grouped['findings'])}")
+    if grouped.get("procedures"):
+        summary_lines.append(f"Procedures: {', '.join(grouped['procedures'])}")
+    if grouped.get("medications"):
+        summary_lines.append(f"Medications: {', '.join(grouped['medications'])}")
+    if grouped.get("anatomy"):
+        summary_lines.append(f"Anatomy: {', '.join(grouped['anatomy'])}")
+    if acuity:
+        summary_lines.append(f"Acuity: {', '.join(sorted(set(acuity)))}")
+    if laterality:
+        summary_lines.append(f"Laterality: {', '.join(sorted(set(laterality)))}")
+    if grouped.get("negated_or_historical"):
+        summary_lines.append(
+            f"Negated/Historical: {', '.join(grouped['negated_or_historical'])}"
+        )
+
+    summary_text = _truncate_text(" | ".join(summary_lines), MEDSPACY_SUMMARY_MAX_CHARS)
+    return {
+        "text": summary_text,
+        "sections": grouped,
+        "signals": {
+            "acuity": sorted(set(acuity)),
+            "laterality": sorted(set(laterality)),
+        },
+    }
 
 
 # ============================================================
@@ -282,7 +313,7 @@ def medspacy_extract_clinical_context(clinical_text: str, max_entities: int = ME
         max_entities: Maximum entities to return in the JSON payload.
 
     Returns:
-        JSON string containing sections, abbreviations, entities, and grouped summary fields.
+        JSON string containing sections, entities, and a consolidated clinical summary.
     """
     print(clinical_text)
     text = clinical_text.strip()
@@ -300,6 +331,8 @@ def medspacy_extract_clinical_context(clinical_text: str, max_entities: int = ME
 
     entities: List[Dict] = []
     seen_texts = set()  # ✅ Fix: Prevent duplicate text entries in summary
+    acuity_hits: List[str] = []
+    laterality_hits: List[str] = []
     
     grouped: Dict[str, List[str]] = {
         "findings": [],
@@ -322,9 +355,9 @@ def medspacy_extract_clinical_context(clinical_text: str, max_entities: int = ME
         section = next((s["name"] for s in sections if s["start_char"] <= ent.start_char < s["end_char"]), "document")
 
         if context.get("acuity"):
-            entities.append(context["acuity"])
+            acuity_hits.append(context["acuity"])
         if context.get("laterality"):
-            entities.append(context["laterality"])
+            laterality_hits.append(context["laterality"])
 
         entities.append({
             "text": ent_text,
@@ -352,11 +385,14 @@ def medspacy_extract_clinical_context(clinical_text: str, max_entities: int = ME
     if not unique_spans:
         warnings_list = list(warnings_list) + ["No NLP entities detected; rely on section parsing and direct note review."]
 
+    clinical_summary = _format_clinical_summary(grouped, acuity_hits, laterality_hits)
+
     result = {
         "status": "ok",
         "pipeline": pipeline_name,
         "warnings": list(warnings_list),
         "sections": sections,
+        "clinical_summary": clinical_summary,
         "entities": entities,
         "summary": grouped,
     }
@@ -367,29 +403,84 @@ def medspacy_extract_clinical_context(clinical_text: str, max_entities: int = ME
 # ============================================================
 # TOOL 2: RAG context retrieval from local ICD-10 code store
 # ============================================================
+def _parse_evidence_block(collection: str, text: str, source: str) -> Dict[str, str]:
+    cleaned = (text or "").strip()
+    code = ""
+    description = ""
+    guideline_note = ""
+
+    if "|" in cleaned and collection in {"diagnoses", "procedures"}:
+        parts = [p.strip() for p in cleaned.split("|")]
+        code = parts[0] if parts else ""
+        description = parts[1] if len(parts) > 1 else ""
+        guideline_note = " | ".join(parts[2:]).strip() if len(parts) > 2 else ""
+    elif collection == "guidelines":
+        guideline_note = cleaned
+    else:
+        description = cleaned
+
+    return {
+        "code": code,
+        "description": description,
+        "guideline_note": guideline_note,
+        "source": source,
+    }
+
+
+def _format_evidence_block(block: Dict[str, str]) -> str:
+    return f"{block.get('code', '')} | {block.get('description', '')} | {block.get('guideline_note', '')}".strip()
+
+
 def _search_collection(collection: str, query: str, max_results: int, max_chars: int) -> str:
     retriever = get_hybrid_retriever(collection)
     if not retriever:
-        return f"{collection.capitalize()} RAG store not available. Build it by running: python rag_builder.py"
+        return json.dumps({
+            "status": "error",
+            "message": f"{collection.capitalize()} RAG store not available. Build it by running: python rag_builder.py",
+            "collection": collection,
+        }, indent=2)
     
     docs = retriever.invoke(query, k=max(1, min(max_results, 10)))
     if not docs:
-        return f"No matching results found in the {collection} RAG store."
-        
-    chunks: list[str] = []
+        return json.dumps({
+            "status": "ok",
+            "message": f"No matching results found in the {collection} RAG store.",
+            "collection": collection,
+            "query": query,
+            "evidence_blocks": [],
+        }, indent=2)
+
+    evidence_blocks: List[Dict[str, str]] = []
+    formatted_blocks: List[str] = []
     total_chars = 0
-    for idx, doc in enumerate(docs, start=1):
+
+    for doc in docs:
+        source = (doc.metadata or {}).get("source", "")
         chunk = _truncate_text(doc.page_content, RAG_DOC_MAX_CHARS)
-        labeled = f"[{idx}] {chunk}"
-        next_total = total_chars + len(labeled) + 5
-        if chunks and next_total > max_chars:
+        block = _parse_evidence_block(collection, chunk, source)
+        block_text = _format_evidence_block(block)
+
+        next_total = total_chars + len(block_text) + 5
+        if evidence_blocks and next_total > max_chars:
             break
-        chunks.append(labeled)
+
+        evidence_blocks.append(block)
+        formatted_blocks.append(block_text)
         total_chars = next_total
+
+    result = {
+        "status": "ok",
+        "collection": collection,
+        "query": query,
+        "evidence_blocks": evidence_blocks,
+        "formatted_blocks": formatted_blocks,
+        "total_blocks": len(evidence_blocks),
+    }
+
     print(f"Query: '{query}', max_results: {max_results}, max_chars: {max_chars} \n")
-    print(f"Retrieved {len(chunks)} passages from {collection} RAG store (Total chars: {total_chars}/{max_chars}) \n")
-    print("\\n---\\n".join(chunks) + "\n\n")
-    return "\\n---\\n".join(chunks)
+    print(f"Retrieved {len(evidence_blocks)} evidence blocks from {collection} RAG store (Total chars: {total_chars}/{max_chars}) \n")
+    print("\\n---\\n".join(formatted_blocks) + "\n\n")
+    return json.dumps(result, indent=2)
 
 @tool(parse_docstring=True)
 def search_diagnoses(query: str, max_results: int = RAG_DEFAULT_RESULTS, max_chars: int = RAG_TOTAL_MAX_CHARS) -> str:
@@ -399,6 +490,9 @@ def search_diagnoses(query: str, max_results: int = RAG_DEFAULT_RESULTS, max_cha
         query: Clinical diagnosis description or specific ICD-10-CM code.
         max_results: Maximum retrieved passages.
         max_chars: Maximum total response size.
+
+    Returns:
+        JSON string with structured evidence blocks (Code | Description | Guideline Note).
     """
     return _search_collection("diagnoses", query, max_results, max_chars)
 
@@ -410,6 +504,9 @@ def search_procedures(query: str, max_results: int = RAG_DEFAULT_RESULTS, max_ch
         query: Clinical procedure description or specific ICD-10-PCS code.
         max_results: Maximum retrieved passages.
         max_chars: Maximum total response size.
+
+    Returns:
+        JSON string with structured evidence blocks (Code | Description | Guideline Note).
     """
     return _search_collection("procedures", query, max_results, max_chars)
 
@@ -421,6 +518,9 @@ def search_guidelines(query: str, max_results: int = RAG_DEFAULT_RESULTS, max_ch
         query: Question about coding rules, guidelines, or sequencing.
         max_results: Maximum retrieved passages.
         max_chars: Maximum total response size.
+
+    Returns:
+        JSON string with structured evidence blocks (Code | Description | Guideline Note).
     """
     return _search_collection("guidelines", query, max_results, max_chars)
 
@@ -436,11 +536,65 @@ def get_lessons_tool(current_summary: str, max_chars: int = LESSONS_MAX_CHARS) -
         max_chars: Maximum response size in characters.
 
     Returns:
-        Past corrections with success rates and failure patterns.
+        JSON string formatted as Pattern -> Correction -> Rationale.
     """
     print(f"📚 [get_lessons_tool] Retrieving lessons for current summary: '{current_summary[:100]}...'")
-    lessons = get_lessons(current_summary, top_k=LESSONS_TOP_K)
-    return _truncate_text(lessons, max_chars)
+    raw_lessons = get_lessons(current_summary, top_k=LESSONS_TOP_K)
+
+    if not raw_lessons or "No previous corrections found." in raw_lessons:
+        return json.dumps({
+            "status": "ok",
+            "message": "No previous corrections found.",
+            "lessons": [],
+            "failure_patterns": "",
+        }, indent=2)
+
+    parts = raw_lessons.split("COMMON FAILURE PATTERNS:")
+    lesson_text = parts[0].strip()
+    failure_patterns = parts[1].strip() if len(parts) > 1 else ""
+
+    lessons: List[Dict[str, str]] = []
+    formatted: List[str] = []
+    for line in lesson_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        relevance_match = re.search(r"LESSON \(relevance: ([^\)]*)\)", line)
+        relevance = relevance_match.group(1) if relevance_match else ""
+
+        match = re.search(
+            r"Previously coded '([^']+)' but corrected to '([^']+)'. Reason: (.+)$",
+            line,
+        )
+
+        if match:
+            wrong_code, correct_code, rationale = match.groups()
+            pattern = f"Wrong code assigned: {wrong_code}"
+            correction = f"{wrong_code} -> {correct_code}"
+            rationale = rationale.strip()
+        else:
+            pattern = "Similar-case correction"
+            correction = "See lesson detail"
+            rationale = line
+
+        lesson = {
+            "pattern": pattern,
+            "correction": correction,
+            "rationale": rationale,
+            "relevance": relevance,
+        }
+        lessons.append(lesson)
+        formatted.append(f"{pattern} -> {correction} -> {rationale}")
+
+    result = {
+        "status": "ok",
+        "lessons": lessons,
+        "formatted_lessons": formatted,
+        "failure_patterns": failure_patterns,
+    }
+
+    return _truncate_text(json.dumps(result, indent=2), max_chars)
 
 
 # ============================================================
