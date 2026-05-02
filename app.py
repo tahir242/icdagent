@@ -255,10 +255,16 @@ async def code_procedure_stream(req: CodingRequest):
 @app.post("/batch")
 async def batch_code(req: BatchRequest):
     results = []
-    for summary in req.summaries:
+    for idx, summary in enumerate(req.summaries):
+        cleaned_summary = (summary or "").strip()
+        if not cleaned_summary:
+            raise HTTPException(
+                status_code=400,
+                detail=f"summaries[{idx}] cannot be empty.",
+            )
         try:
             res = await asyncio.wait_for(
-                run_in_threadpool(run_coding_agent, summary),
+                run_in_threadpool(run_coding_agent, cleaned_summary),
                 timeout=150,
             )
         except asyncio.TimeoutError as exc:
